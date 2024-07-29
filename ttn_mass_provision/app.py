@@ -71,7 +71,7 @@ class App():
     ##########################################################################
 
     def _initialize(self):
-        self.ssh = ConduitSsh(self.args)
+        # self.ssh = ConduitSsh(self.args)
         pass
 
     ##########################################################################
