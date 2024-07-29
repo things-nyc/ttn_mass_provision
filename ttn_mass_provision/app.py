@@ -27,9 +27,11 @@ import typing
 
 Any = typing.Any
 Union = typing.Union
+List = typing.List
 
 from .constants import Constants
 from .__version__ import __version__
+from .conduit import Conduit
 from .conduit_ssh import ConduitSsh
 
 ##############################################################################
@@ -142,20 +144,6 @@ class App():
 
         return options
 
-    ################################
-    # Check whether SSH is enabled #
-    ################################
-    def check_ssh_enabled(self, /, timemout: Union[int, None] = None) -> bool:
-        c = self.ssh
-        logger = self.logger
-
-        if c.ping():
-            logger.info("ssh to %s is working", self.args.address)
-            return True
-        else:
-            logger.info("ssh to %s is not working", self.args.address)
-            return False
-
     #############################
     # Loop until SSH is enabled #
     #############################
@@ -200,13 +188,18 @@ class App():
             return False
 
         # for each line, split and match
-        conduits = []
+        conduits: List[Conduit] = []
         for line in arplist:
             fields = line.split()
             macaddr = fields[3]
             if macaddr.startswith("00:08:00:"):
-                conduits.append({ 'ip': ipaddress.IPv4Address(fields[0]), "mac":macaddr.replace(':', '-')})
-
+                conduits.append(
+                    Conduit(
+                        ip=ipaddress.IPv4Address(fields[0]),
+                        mac=macaddr.replace(':', '-'),
+                        options=options
+                        )
+                    )
         self.conduits = conduits
         return True
 
@@ -222,5 +215,19 @@ class App():
             return 1
 
         logger.info("found %d conduits: %s", len(self.conduits), self.conduits)
+
+        no_ssh: List[str] = []
+
+        for conduit in self.conduits:
+            logger.info("check ssh for %s", str(conduit.ip))
+            if not conduit.check_ssh_enabled():
+                no_ssh.append(str(conduit.ip))
+
+        if len(no_ssh) > 0:
+            logger.error("%d Conduits could not be reached: %s", len(no_ssh), ', '.join(no_ssh))
+            return 1
+
+        logger.info("all %d Conduits were reachable", len(self.conduits))
+
         logger.info("all done")
         return 0

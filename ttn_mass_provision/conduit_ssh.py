@@ -15,8 +15,8 @@
 ##############################################################################
 
 #### imports ####
-from __future__ import print_function
-import logging as Logging
+import ipaddress
+import logging
 import typing
 
 Any = typing.Any
@@ -36,17 +36,18 @@ from .constants import Constants
 ##############################################################################
 
 class ConduitSsh():
-    def __init__(self, options: Any):
+    def __init__(self, options: Any, host: Union[ipaddress.IPv4Address, str]):
         self.options = options
         self.connection = fabric.Connection(
-                            host=options.address,
+                            host=str(host),
                             user=options.username,
                             connect_kwargs={
                                 "password": options.password,
                                 "timeout": 3
-                            }
+                                }
                             )
-        self.logger = Logging.getLogger(__name__)
+
+        self.logger = logging.getLogger(__name__)
         pass
 
     class Error(Exception):
