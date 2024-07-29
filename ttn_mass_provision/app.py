@@ -16,6 +16,8 @@
 #### imports ####
 from __future__ import print_function
 import argparse
+import invoke
+import io
 import ipaddress
 import logging
 import pathlib
@@ -171,12 +173,54 @@ class App():
             time.sleep(1)
         return False
 
+    ##################################################
+    # Find all the MultiTech gateways on the network #
+    ##################################################
+    def find_conduits(self) -> bool:
+        options = self.args
+        logger = self.logger
+
+        stdout = io.StringIO()
+
+        hosts = ' '.join([ str(host) for host in options.address.hosts()])
+        cmd = "for i in %s; do { ( ping -c2 -W1 $i |& grep -q '0 received' || echo $i ; ) & disown; } done" % hosts
+        try:
+            logger.debug("launch command: %s", cmd)
+            result = invoke.run(cmd, out_stream=stdout)
+        except Exception as error:
+            logger.error("mass ping failed: %s", error)
+            return False
+
+        # grab the arp buffer
+        try:
+            with open("/proc/net/arp", "r") as f:
+                arplist = f.read().splitlines()[1:]
+        except Exception as error:
+            logger.error("arp read failed: %s", error)
+            return False
+
+        # for each line, split and match
+        conduits = []
+        for line in arplist:
+            fields = line.split()
+            macaddr = fields[3]
+            if macaddr.startswith("00:08:00:"):
+                conduits.append({ 'ip': ipaddress.IPv4Address(fields[0]), "mac":macaddr.replace(':', '-')})
+
+        self.conduits = conduits
+        return True
+
     #################################
     # Run the app and return status #
     #################################
     def run(self) -> int:
-        aep = self.aep
         options = self.args
+        logger = self.logger
 
+        if not self.find_conduits():
+            logger.error("couldn't find any conduits")
+            return 1
+
+        logger.info("found %d conduits: %s", len(self.conduits), self.conduits)
         logger.info("all done")
         return 0
