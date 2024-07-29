@@ -30,9 +30,6 @@ from .constants import Constants
 from .__version__ import __version__
 from .conduit_ssh import ConduitSsh
 
-# establish a global
-logger = None
-
 ##############################################################################
 #
 # The application class
