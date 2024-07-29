@@ -45,6 +45,7 @@ class App():
         options = self._parse_arguments()
         self.args = options
 
+        # set up logging
         logging.basicConfig()
         logger = logging.getLogger(__name__)
         if options.debug:
