@@ -214,7 +214,7 @@ class App():
             logger.error("couldn't find any conduits")
             return 1
 
-        logger.info("found %d conduits: %s", len(self.conduits), self.conduits)
+        logger.info("found %d conduits: %s", len(self.conduits), [ str(x) for x in self.conduits ])
 
         no_ssh: List[str] = []
 

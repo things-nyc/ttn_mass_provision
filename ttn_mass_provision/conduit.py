@@ -40,6 +40,9 @@ class Conduit():
         self.ssh = ConduitSsh(options, host=ip)
         pass
 
+    def __str__(self):
+        return self.mac
+
     class Error(Exception):
         """ this is the Exception thrown by class Conduit """
         pass
