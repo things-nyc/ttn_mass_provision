@@ -60,9 +60,9 @@ build:	.buildenv
 #    .venv creates the virtual environment and installs requirements
 #    venv does the same, but tells you how to use the venv.
 #
-.venv:
+.venv: requirements.txt
 	$(PYTHON) -m venv .venv
-	source .venv/$(ACTIVATE) && $(PYTHON) -m pip install -r requirements.txt
+	. .venv/$(ACTIVATE) && $(PYTHON) -m pip install -r requirements.txt
 
 venv:	.venv
 	@printf "%s\n" \
