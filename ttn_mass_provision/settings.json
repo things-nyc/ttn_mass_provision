@@ -1,0 +1,50 @@
+{
+    "product_id_map":
+        {
+            "MTCDT-L4N1-247A":
+                {
+                    "device_class": "Conduit 2",
+                    "device_type": "Conduit 247",
+                    "has_cellular": true
+                },
+            "MTCDT-210L":
+                {
+                    "device_class": "Conduit 2",
+                    "device_type": "Conduit 210L",
+                    "has_cellular": false
+                },
+            "MTCDT-210A":
+                {
+                    "device_class": "Conduit 2",
+                    "device_type": "Conduit 210L",
+                    "has_cellular": false
+                },
+            "MTCDT-246L":
+                {
+                    "device_class": "Conduit 2",
+                    "device_type": "Conduit 246L",
+                    "has_cellular": false
+                },
+            "MTCDT-246A":
+                {
+                    "device_class": "Conduit 2",
+                    "device_type": "Conduit 246L",
+                    "has_cellular": false
+                },
+            "MTCDT-246L-L4N1":
+                {
+                    "device_class": "Conduit 2",
+                    "device_type": "Conduit 246L",
+                    "has_cellular": true
+                }
+        },
+    "organizations":
+        {
+            "ttn-nyc":
+                {
+                    "description": "The Things Network NY, Inc.",
+                    "prefix": "ttn-nyc-",
+                    "org_dir": "org-ttnnyc-gateways"
+                }
+        }
+}
