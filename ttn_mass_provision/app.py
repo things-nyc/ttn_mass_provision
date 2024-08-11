@@ -103,6 +103,10 @@ class App():
 
     def _initialize(self):
         # self.ssh = ConduitSsh(self.args)
+        self.inventory_dir : pathlib.Path = Constants.DEFAULT_INVENTORY_PATH / self.organization.org_dir
+        if not self.inventory_dir.is_dir():
+            self.logger.error("not a directory: %s", str(self.inventory_dir))
+            sys.exit(1)
         pass
 
     ##########################################################################
@@ -158,6 +162,12 @@ class App():
                         dest="address", default=Constants.DEFAULT_IP_ADDRESS,
                         help="IP address of the network holding the Conduits, as IpV4 addr/bits (default %(default)s).")
 
+        group = parser.add_argument_group("Provisioning options")
+        group.add_argument("--organization",
+                        dest="organization",
+                        default=Constants.DEFAULT_ORG_NAME,
+                        help="default organization name (default %(default)s).")
+
         options = parser.parse_args()
         if options.debug:
             options.verbose = options.debug
@@ -167,6 +177,18 @@ class App():
             options.address = ipaddress.IPv4Network(options.address)
         except Exception as error:
             print("not a valid netmask: %s: %s", options.address, error)
+            sys.exit(1)
+
+        if options.organization in self.settings["organizations"]:
+            try:
+                self.organization = Settings.Organization(**self.settings["organizations"][options.organization])
+            except Exception as e:
+                raise self.Error(
+                    "can't convert Organization() for organization %s: check settings.json: %s",
+                                self.organization,
+                                e)
+        else:
+            print("not a valid organization: %s", options.organization)
             sys.exit(1)
 
         return options
@@ -224,11 +246,59 @@ class App():
                     Conduit(
                         ip=ipaddress.IPv4Address(fields[0]),
                         mac=macaddr.replace(':', '-'),
-                        options=options
+                        options=options,
+                        settings=self.settings
                         )
                     )
         self.conduits = conduits
+        self.conduits.sort(key=lambda conduit: conduit.mac)
         return True
+
+    ##################################
+    # Populate the Conduit type info #
+    ##################################
+    def get_product_ids(self) -> bool:
+        result: bool = True
+        for conduit in self.conduits:
+            self.logger.info("%s: attributes %s", conduit.mac, conduit.product_attributes)
+            if conduit.get_product_id():
+                conduit.set_product_attributes()
+            else:
+                result = False
+        return result
+
+    ##############################
+    # Populate the gateway names #
+    ##############################
+    def populate_gateway_names(self) -> bool:
+        result: bool = True
+        for conduit in self.conduits:
+            result = conduit.generate_hostname(self.organization.prefix) and result
+            result = conduit.generate_friendly_name(self.organization) and result
+        return result
+
+    #####################
+    # Get the host keys #
+    #####################
+    def get_host_keys(self) -> bool:
+        result : bool = True
+        for conduit in self.conduits:
+            if not conduit.get_gateway_public_key():
+                self.logger.error("Can't get host key for %s", conduit.mac)
+                result = False
+        return result
+
+    ##########################
+    # Get the lorawan GW ids #
+    ##########################
+    def get_lora_eui64(self) -> bool:
+        result : bool = True
+        for conduit in self.conduits:
+            if not conduit.get_lora_eui64():
+                self.logger.error("Can't get LoRa EUI64 for %s", conduit.mac)
+                result = False
+        return result
+
 
     #################################
     # Run the app and return status #
@@ -255,6 +325,26 @@ class App():
             return 1
 
         logger.info("all %d Conduits were reachable", len(self.conduits))
+
+        # get all the product IDs for the Conduits
+        if not self.get_product_ids():
+            logger.error("get_product_ids() failed")
+            return 1
+
+        # populate the gateway names and descriptions
+        if not self.populate_gateway_names():
+            logger.error("populate_gateway_names failed")
+            return 1
+
+        # populate the host keys
+        if not self.get_host_keys():
+            logger.error("get_host_keys() failed")
+            return 1
+
+        # populate the lora EUI64
+        if not self.get_lora_eui64():
+            logger.error("get_lora_eui64() failed")
+            return 1
 
         logger.info("all done")
         return 0

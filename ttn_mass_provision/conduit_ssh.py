@@ -79,7 +79,7 @@ class ConduitSsh():
             return False
 
     def sudo(self, command: str, /, **sudo_kwargs) -> bool:
-        self.logger.info("sudo")
+        self.logger.debug("sudo")
         connection = self.connection
         options = self.options
 
@@ -95,3 +95,16 @@ class ConduitSsh():
         except Exception as error:
             self.logger.error("sudo error", exc_info=error, stack_info=True)
             return False
+
+    def do(self, command: str, /, **run_kwargs) -> fabric.Result | None:
+        self.logger.debug("do")
+        connection = self.connection
+        options = self.options
+
+        try:
+            result = connection.run(command, **run_kwargs)
+            self.logger.debug("%s: result: %s", command, result)
+            return result
+        except Exception as error:
+            self.logger.error("do error", exc_info=error, stack_info=True)
+            return None
