@@ -162,3 +162,62 @@ class Jumphost:
         else:
             logger.error("useradd failed: %s", answer.stderr.strip())
             return None
+
+    # create the SSH linkage for gateway users. This is idempotent
+    def add_gateway_user_ssh_authorization(self, keys: list[str], username: str, gateway_group: str) -> bool:
+        logger = self.logger
+        options = self.options
+
+        logger.debug("user %s: keys: %s", username, keys)
+
+        ssh_dir = shlex.quote("/home/" + username + "/.ssh")
+        answer = self.ssh.sudo("test -d " + ssh_dir, user=None)
+
+        if answer == None:
+            logger.error("%s: sudo to create .ssh dir failed catastrophically", self.hostname)
+            return False
+        if not answer.ok:
+            cmd = "mkdir -m 700 " + ssh_dir
+        else:
+            cmd = "chmod 700 " + ssh_dir
+
+        answer = self.ssh.sudo(cmd)
+        if answer == None:
+            logger.error("%s: can't setup .ssh directory: %s", self.hostname, cmd)
+        elif not answer.ok:
+            logger.error("%s: %s failed: stderr: %s", self.hostname, cmd, answer.stderr)
+            return False
+
+        cmd = "chown " + shlex.quote(username) + "." + shlex.quote(gateway_group) + " " + ssh_dir
+        answer = self.ssh.sudo(cmd, user=None)
+        if answer == None:
+            logger.error("%s: can't setup .ssh directory: %s", self.hostname, cmd)
+        elif not answer.ok:
+            logger.error("%s: %s failed: stderr: %s", self.hostname, cmd, answer.stderr)
+            return False
+
+        logger.info("%s: ~%s/.ssh exists with correct permissions", self.hostname, username)
+
+        # now, put the authorized keys in the .ssh directory.
+        commands = [
+              "touch " + ssh_dir + "/authorized_keys",
+              "chown " + shlex.quote(username) + "." + shlex.quote(gateway_group) + " " + ssh_dir + "/authorized_keys",
+              "chmod 600 " + ssh_dir + "/authorized_keys",
+              "sh -c " + shlex.quote("printf '%s\n' >>" + ssh_dir + "/authorized_keys " + shlex.join(keys)),
+              "sort -u -o " + ssh_dir + "/authorized_keys " + ssh_dir + "/authorized_keys" ]
+
+        for command in commands:
+            answer = self.ssh.sudo(command, show=options.debug, echo=options.debug)
+
+            if answer == None:
+                logger.error("%s: failed catastrophically: %s", self.hostname, command)
+                return False
+
+            if not answer.ok:
+                logger.error("%s: creating authorized_keys failed: %s\n--stdout--:\n%s\n--stderr--:\n%s",
+                            self.hostname, command,
+                            "" if answer.stdout == None else answer.stdout.strip(),
+                            "" if answer.stderr == None else answer.stderr.strip())
+                return False
+
+        return True

@@ -392,6 +392,18 @@ class App():
                 else:
                     conduit.set_jumphost_userid(jumphost, userid=current_uid)
 
+                # if we successfully got this far, confirm ssh
+                if result:
+                    userid = conduit.get_jumphost_reverse_socket(jumphost)
+
+                    if not jumphost.add_gateway_user_ssh_authorization(
+                        keys=[ conduit.public_key ],
+                        username=username,
+                        gateway_group=gateway_group
+                        ):
+                        logger.error("%s: %s: failed to create ssh entries for user %s", conduit.mac, jumphost.hostname, username)
+                        result = False
+
         return result
 
     #################################

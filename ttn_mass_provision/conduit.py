@@ -146,7 +146,7 @@ class Conduit():
         if result == None or not result.ok:
             return False
 
-        gateway_public_key: str = result.stdout.splitlines()[0]
+        gateway_public_key: str = result.stdout.splitlines()[0].strip()
         logger.info("gateway public host key for %s: %s", self.mac, gateway_public_key)
         self.public_key = gateway_public_key
 
@@ -186,3 +186,15 @@ class Conduit():
         elif userid != self.jumphost_userid:
             raise self.Error("%s: %s: can't change jumphost_userid from %d to %d" % (self.mac, jumphost.hostname, self.jumphost_userid, userid))
         return True
+
+    ###################################################################
+    # Get the reverse socket on a given jumphost -- we use the userid #
+    ###################################################################
+    def get_jumphost_reverse_socket(self, jumphost: Jumphost) -> int | None:
+        return self.get_jumphost_userid(jumphost)
+
+    ##############################################################################
+    # Get the keepalive socket base on a given jumphost -- we base on the userid #
+    ##############################################################################
+    def get_jumphost_keepalive(self, jumphost: Jumphost) -> int | None:
+        return (self.get_jumphost_userid(jumphost) - jumphost.first_uid) * 2 + jumphost.first_keepalive
