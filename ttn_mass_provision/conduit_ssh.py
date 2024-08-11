@@ -3,7 +3,7 @@
 # Name: conduit_ssh.py
 #
 # Function:
-#       Toplevel ConduitSsh() class, provides APIs for ssh conrol of
+#       Toplevel ConduitSsh() class, provides APIs for ssh connection to
 #       a controlled Conduit.
 #
 # Copyright notice and license:
