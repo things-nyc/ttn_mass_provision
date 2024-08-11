@@ -15,9 +15,11 @@
 
 #### imports ####
 import argparse
+from importlib.resources import files as importlib_files
 import invoke
 import io
 import ipaddress
+import jsons
 import logging
 import pathlib
 import sys
@@ -32,6 +34,8 @@ from .constants import Constants
 from .__version__ import __version__
 from .conduit import Conduit
 from .conduit_ssh import ConduitSsh
+from .settings import Settings
+
 
 ##############################################################################
 #
@@ -44,7 +48,11 @@ class App():
         # load the constants
         self.constants = Constants()
 
+        # load the settings -- must be before parsing args
+        self._load_settings()
+
         # now parse the args
+        self.organization : Settings.Organization | None = None
         options = self._parse_arguments()
         self.args = options
 
@@ -66,6 +74,26 @@ class App():
         self._initialize()
         logger.info("App is initialized")
         return
+
+    # load the settings file during initialization.
+    def _load_settings(self):
+        # read the JSON settings file
+        settings_file = importlib_files("ttn_mass_provision").joinpath("settings.json")
+        if not settings_file.is_file():
+            raise self.Error(f"Can't find setup JSON file: {settings_file}")
+
+        settings_text = ""
+        try:
+            settings_text = settings_file.read_text()
+        except:
+            raise self.Error(f"Can't read: {settings_file}")
+
+        settings_dict: dict = jsons.loads(settings_text)
+        self.settings = settings_dict
+
+    class Error(Exception):
+        """ this is the Exception thrown by class App """
+        pass
 
     ##########################################################################
     #
