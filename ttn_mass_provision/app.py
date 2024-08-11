@@ -33,7 +33,6 @@ List = typing.List
 from .constants import Constants
 from .__version__ import __version__
 from .conduit import Conduit
-from .conduit_ssh import ConduitSsh
 from .settings import Settings
 
 
@@ -102,7 +101,6 @@ class App():
     ##########################################################################
 
     def _initialize(self):
-        # self.ssh = ConduitSsh(self.args)
         self.inventory_dir : pathlib.Path = Constants.DEFAULT_INVENTORY_PATH / self.organization.org_dir
         if not self.inventory_dir.is_dir():
             self.logger.error("not a directory: %s", str(self.inventory_dir))
