@@ -57,7 +57,7 @@ class App():
         self.args = options
 
         # set up logging
-        logging.basicConfig()
+        logging.basicConfig(format="%(levelname)s: %(module)s: %(message)s")
         logger = logging.getLogger(__name__)
         if options.debug:
             logger.setLevel('DEBUG')
