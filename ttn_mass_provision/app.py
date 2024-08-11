@@ -196,6 +196,7 @@ class App():
         if options.organization in self.settings["organizations"]:
             try:
                 self.organization = Settings.Organization(**self.settings["organizations"][options.organization])
+
             except Exception as e:
                 raise self.Error(
                     f"can't convert Organization() for organization {options.organization:s}: check settings.json: {e}")
