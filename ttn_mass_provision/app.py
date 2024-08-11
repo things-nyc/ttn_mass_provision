@@ -190,7 +190,7 @@ class App():
         try:
             options.address = ipaddress.IPv4Network(options.address)
         except Exception as error:
-            print("not a valid netmask: %s: %s", options.address, error)
+            print("not a valid network address: %s: %s" % (options.address, error))
             sys.exit(1)
 
         if options.organization in self.settings["organizations"]:
@@ -198,9 +198,7 @@ class App():
                 self.organization = Settings.Organization(**self.settings["organizations"][options.organization])
             except Exception as e:
                 raise self.Error(
-                    "can't convert Organization() for organization %s: check settings.json: %s",
-                                self.organization,
-                                e)
+                    f"can't convert Organization() for organization {options.organization:s}: check settings.json: {e}")
         else:
             print("not a valid organization: %s", options.organization)
             sys.exit(1)
