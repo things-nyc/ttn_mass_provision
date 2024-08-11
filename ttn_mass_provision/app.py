@@ -33,6 +33,7 @@ List = typing.List
 from .constants import Constants
 from .__version__ import __version__
 from .conduit import Conduit
+from .jumphost import Jumphost
 from .settings import Settings
 
 

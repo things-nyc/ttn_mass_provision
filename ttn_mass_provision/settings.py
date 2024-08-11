@@ -31,3 +31,11 @@ class Settings(jsons.JsonSerializable):
         description: str
         prefix: str
         org_dir: pathlib.Path
+        jumphosts: list[str]
+
+    @dataclass
+    class Jumphost(jsons.JsonSerializable):
+        description: str                # the description of the jump host
+        username: str                   # the username used when logging in
+        hostname: str | None = None     # the host name of the jump host
+        hostport: int = 22              # the port to use for connecting

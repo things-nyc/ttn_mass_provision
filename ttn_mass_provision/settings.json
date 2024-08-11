@@ -44,7 +44,16 @@
                 {
                     "description": "The Things Network NY, Inc.",
                     "prefix": "ttn-nyc-",
-                    "org_dir": "org-ttnnyc-gateways"
+                    "org_dir": "org-ttnnyc-gateways",
+                    "jumphosts": [ "jumphost.ttni.tech" ]
+                }
+        },
+    "jumphosts":
+        {
+            "jumphost.ttni.tech":
+                {
+                    "username": "",
+                    "description": "Jumphost maintained by TTN Ithaca"
                 }
         }
 }
