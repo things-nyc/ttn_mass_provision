@@ -68,6 +68,9 @@ class App():
 
         self.logger = logger
 
+        # remaining arg validation
+        self._validateArgs()
+
         # verbose: report the version.
         logger.info("ttn_mass_provision v%s", __version__)
 
@@ -170,6 +173,18 @@ class App():
         options = parser.parse_args()
         if options.debug:
             options.verbose = options.debug
+
+        return options
+
+    ##########################################################################
+    #
+    # The argument validator; called from __init__() after setting up logging.
+    #
+    ##########################################################################
+
+    def _validateArgs(self):
+        options = self.args
+        logger = self.logger
 
         # validate args.
         try:
