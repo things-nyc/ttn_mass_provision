@@ -33,8 +33,10 @@ from . jumphost_ssh import JumphostSsh
 ##############################################################################
 
 class Jumphost:
-    def __init__(self, hostname: str, options: argparse.Namespace, settings: dict):
-        self.hostname: str = getfqdn(hostname)
+    def __init__(self, attr: Settings.JumphostAttributes, options: argparse.Namespace, settings: dict):
+        self.attr: Settings.JumphostAttributes = attr
+        self.hostname: str = attr.hostname
+        self.fqdn: str = getfqdn(self.hostname)
         self.options = options
         self.settings = settings
         self.logger = logging.getLogger(__name__)
@@ -48,6 +50,12 @@ class Jumphost:
         else:
             logger.setLevel('WARNING')
 
-        self.ssh = JumphostSsh(options, host=self.hostname)
+        self.ssh = JumphostSsh(options, host=self.hostname, username=attr.username)
 
         pass
+
+    def __str__(self) -> str:
+        return str({ "attr": self.attr, "hostname": self.hostname, "ssh": self.ssh})
+
+    def isreachable(self) -> bool:
+        return self.ssh.ping()

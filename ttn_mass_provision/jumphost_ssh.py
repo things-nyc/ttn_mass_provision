@@ -63,6 +63,20 @@ class JumphostSsh():
         """ this is the Exception thrown by class JumphostSsh """
         pass
 
+    # return TRUE if we can reach via SSH
+    def ping(self, /, timeout: Union[int, None]=None) -> bool:
+        self.logger.debug("ping ssh")
+        connection = self.connection
+
+        if timeout != None:
+            connection.connect_timeout = timeout
+
+        try:
+            _ = connection.run("echo ping", hide=True, timeout=5)
+            return True
+        except Exception as error:
+            return False
+
     def sudo(self, command: str, /, **sudo_kwargs) -> bool:
         self.logger.debug("sudo")
         connection = self.connection

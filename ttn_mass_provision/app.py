@@ -15,6 +15,7 @@
 
 #### imports ####
 import argparse
+import getpass
 from importlib.resources import files as importlib_files
 import invoke
 import io
@@ -204,8 +205,45 @@ class App():
             print("not a valid organization: %s", options.organization)
             sys.exit(1)
 
+        # now, get the jumphosts
+        jumphosts : list[Jumphost] = []
+        for jumphost_tag in self.organization.jumphosts:
+            if not jumphost_tag in self.settings["jumphosts"]:
+                raise self.Error(
+                    f"unknown jumphost tag {jumphost_tag} in organization {options.organization}, check settings.json"
+                    )
+            jumphost_data = { "hostname": jumphost_tag, "username": getpass.getuser() }
+            jumphost_data |= self.settings["jumphosts"][jumphost_tag]
+            try:
+                jumphost_attr = Settings.JumphostAttributes(**jumphost_data)
+            except Exception as e:
+                raise self.Error(
+                    f"can't convert jumphost data: org {options.organization:s}, jumphost {jumphost_tag}, data: {jumphost_data}, error: {e}"
+                    )
+            jumphost = Jumphost(jumphost_attr, options, self.settings)
+            logger.debug("jumphost[%d]: %s", len(jumphosts), jumphost)
+            jumphosts.append(jumphost)
+
+        self.jumphosts = jumphosts
         return options
 
+    #################
+    # Test jumposts #
+    #################
+    def check_jumphosts(self) -> bool:
+        logger = self.logger
+
+        logger.debug("check_jumphosts")
+        result = True
+        for jumphost in self.jumphosts:
+            if not jumphost.isreachable():
+                logger.error("can't reach jumphost %s", jumphost.hostname)
+                result = False
+            else:
+                logger.info("jumphost %s: ok", jumphost.hostname)
+
+        logger.debug("check_jumphosts -> %s", result)
+        return result
 
     ##################################################
     # Find all the MultiTech gateways on the network #
@@ -303,6 +341,10 @@ class App():
     def run(self) -> int:
         options = self.args
         logger = self.logger
+
+        if not self.check_jumphosts():
+            logger.error("not all jumphosts available")
+            return 1
 
         if not self.find_conduits():
             logger.error("couldn't find any conduits")

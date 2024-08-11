@@ -34,7 +34,7 @@ class Settings(jsons.JsonSerializable):
         jumphosts: list[str]
 
     @dataclass
-    class Jumphost(jsons.JsonSerializable):
+    class JumphostAttributes(jsons.JsonSerializable):
         description: str                # the description of the jump host
         username: str                   # the username used when logging in
         hostname: str | None = None     # the host name of the jump host

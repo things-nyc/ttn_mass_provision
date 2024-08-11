@@ -52,7 +52,6 @@
         {
             "jumphost.ttni.tech":
                 {
-                    "username": "",
                     "description": "Jumphost maintained by TTN Ithaca"
                 }
         }
