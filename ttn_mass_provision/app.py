@@ -205,22 +205,6 @@ class App():
 
         return options
 
-    #############################
-    # Loop until SSH is enabled #
-    #############################
-    def await_ssh_available(self, /, timeout:int = 10, progress:bool = False) -> bool:
-        c = self.ssh
-        logger = self.logger
-
-        begin = time.time()
-        while time.time() - begin < self.args.reboot_time:
-            print('.', end='', flush=True)
-            if c.ping():
-                print()
-                logger.info("ssh available after {t} seconds".format(t=time.time() - begin))
-                return True
-            time.sleep(1)
-        return False
 
     ##################################################
     # Find all the MultiTech gateways on the network #
