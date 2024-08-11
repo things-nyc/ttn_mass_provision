@@ -48,6 +48,16 @@ class ConduitSsh():
                             )
 
         self.logger = logging.getLogger(__name__)
+        logger = self.logger
+
+        # set the log level
+        if options.debug:
+            logger.setLevel('DEBUG')
+        elif options.verbose:
+            logger.setLevel('INFO')
+        else:
+            logger.setLevel('WARNING')
+
         pass
 
     class Error(Exception):

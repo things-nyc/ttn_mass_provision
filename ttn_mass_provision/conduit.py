@@ -36,8 +36,18 @@ class Conduit():
         self.ip = ipaddress.IPv4Address(ip)
         self.mac = mac
         self.logger = logging.getLogger(__name__)
+        logger = self.logger
         self.options = options
         self.ssh = ConduitSsh(options, host=ip)
+
+        # set the log level
+        if options.debug:
+            logger.setLevel('DEBUG')
+        elif options.verbose:
+            logger.setLevel('INFO')
+        else:
+            logger.setLevel('WARNING')
+
         pass
 
     def __str__(self):
