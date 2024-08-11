@@ -30,6 +30,8 @@ class Settings(jsons.JsonSerializable):
     class Organization(jsons.JsonSerializable):
         description: str
         prefix: str
+        id: str
+        gateway_group: str
         org_dir: pathlib.Path
         jumphosts: list[str]
 
@@ -37,5 +39,7 @@ class Settings(jsons.JsonSerializable):
     class JumphostAttributes(jsons.JsonSerializable):
         description: str                # the description of the jump host
         username: str                   # the username used when logging in
-        hostname: str | None = None     # the host name of the jump host
-        hostport: int = 22              # the port to use for connecting
+        hostname: str                   # the host name of the jump host
+        port: int                       # the port to use for connecting
+        first_uid: int                  # the first UID to assign for gateways on this jumphost.
+        first_keepalive: int            # the first keepalive to assign for gateways

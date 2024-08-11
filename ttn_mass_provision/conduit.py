@@ -24,6 +24,7 @@ Union = typing.Union
 
 from .constants import Constants
 from .conduit_ssh import ConduitSsh
+from .jumphost import Jumphost
 from .settings import Settings
 
 ##############################################################################
@@ -49,6 +50,7 @@ class Conduit():
         self.friendly_name : str | None = None
         self.public_key : str | None = None
         self.lora_eui64 : str | None = None
+        self.jumphost_userid : int | None = None
 
         # set the log level
         if options.debug:
@@ -166,4 +168,21 @@ class Conduit():
         logger.info("lora_eui64 for %s: %s", self.mac, lora_eui64)
         self.lora_eui64 = lora_eui64
 
+        return True
+
+    #######################################
+    # Get the user ID on a given jumphost #
+    #######################################
+    def get_jumphost_userid(self, jumphost: Jumphost) -> int | None:
+        # we don't actually support diffent values on different jumphosts
+        return self.jumphost_userid
+
+    #################################################
+    # Get the gateway's user ID on a given jumphost #
+    #################################################
+    def set_jumphost_userid(self, jumphost: Jumphost, userid: int) -> bool:
+        if self.jumphost_userid == None:
+            self.jumphost_userid = userid
+        elif userid != self.jumphost_userid:
+            raise self.Error("%s: %s: can't change jumphost_userid from %d to %d" % (self.mac, jumphost.hostname, self.jumphost_userid, userid))
         return True

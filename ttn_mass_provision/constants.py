@@ -28,4 +28,8 @@ class Constants:
         DEFAULT_INVENTORY_PATH = Path("..")
         DEFAULT_MULTITECH_CM_PATH = Path("../ttn-multitech-cm")
 
+        #### jumphost params ####
+        JUMPHOST_FIRST_UID: int = 20000
+        JUMPHOST_FIRST_KEEPALIVE: int = 40000
+
 ### end of file ###

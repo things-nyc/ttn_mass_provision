@@ -195,9 +195,13 @@ class App():
             sys.exit(1)
 
         if options.organization in self.settings["organizations"]:
+            org_data = {
+                "id": options.organization,
+                "gateway_group": options.organization + "-gateways"
+                }
+            org_data |= self.settings["organizations"][options.organization]
             try:
-                self.organization = Settings.Organization(**self.settings["organizations"][options.organization])
-
+                self.organization = Settings.Organization(**org_data)
             except Exception as e:
                 raise self.Error(
                     f"can't convert Organization() for organization {options.organization:s}: check settings.json: {e}")
@@ -212,7 +216,13 @@ class App():
                 raise self.Error(
                     f"unknown jumphost tag {jumphost_tag} in organization {options.organization}, check settings.json"
                     )
-            jumphost_data = { "hostname": jumphost_tag, "username": getpass.getuser() }
+            jumphost_data = {
+                "hostname": jumphost_tag,
+                "username": getpass.getuser(),
+                "port": 22,
+                "first_uid": Constants.JUMPHOST_FIRST_UID,
+                "first_keepalive": Constants.JUMPHOST_FIRST_KEEPALIVE
+                }
             jumphost_data |= self.settings["jumphosts"][jumphost_tag]
             try:
                 jumphost_attr = Settings.JumphostAttributes(**jumphost_data)
@@ -334,6 +344,55 @@ class App():
                 result = False
         return result
 
+    #############################################
+    # Create the gateway group on each jumphost #
+    #############################################
+    def create_gateway_groups_on_jumphosts(self) -> bool:
+        result = True
+        logger = self.logger
+        organization = self.organization
+        gateway_group = organization.gateway_group
+        for jumphost in self.jumphosts:
+            logger.info("%s: confirm gateway_group %s", jumphost.hostname, gateway_group)
+            if not jumphost.create_gateway_group(gateway_group):
+                result = False
+                logger.debug("failed to create group %s for organization %s on jumphost %s",
+                             gateway_group, organization.id, jumphost.hostname
+                             )
+        return result
+
+    #############################################
+    # Create the gateway users on each jumphost #
+    #############################################
+    def create_gateway_users_on_jumphosts(self) -> bool:
+        result = True
+        logger = self.logger
+        organization = self.organization
+        gateway_group = organization.gateway_group
+
+        #
+        # we don't want to handle multiple user ids on multi jumphosts: no way to test.
+        # so the below code
+        for conduit in self.conduits:
+            for jumphost in self.jumphosts:
+                username = conduit.hostname
+                userid = conduit.get_jumphost_userid(jumphost)
+                logger.info("%s: create gateway user %s group %s%s",
+                            jumphost.hostname, username, gateway_group,
+                            f" with user id {userid}" if userid != None else ""
+                            )
+                current_uid = jumphost.create_jumphost_user(desired_uid=userid, gateway_id=username, gateway_name=username, gateway_groupname=gateway_group)
+                if current_uid == None:
+                    result = False
+                    logger.debug("failed to create user %s (uid %s) for gateway %s on jumphost %s",
+                                 username,
+                                 "auto" if userid == None else str(userid),
+                                 conduit.mac, jumphost.hostname
+                                 )
+                else:
+                    conduit.set_jumphost_userid(jumphost, userid=current_uid)
+
+        return result
 
     #################################
     # Run the app and return status #
@@ -383,6 +442,16 @@ class App():
         # populate the lora EUI64
         if not self.get_lora_eui64():
             logger.error("get_lora_eui64() failed")
+            return 1
+
+        # create the jumphost gateway groups
+        if not self.create_gateway_groups_on_jumphosts():
+            logger.error("create_gateway_groups_on_jumphosts() failed")
+            return 1
+
+        # create users for each of the gateways in each of the jumphots
+        if not self.create_gateway_users_on_jumphosts():
+            logger.error("create_gateway_users_on_jumphosts() failed")
             return 1
 
         logger.info("all done")

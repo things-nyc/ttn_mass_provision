@@ -17,6 +17,7 @@
 #### imports ####
 import ipaddress
 import logging
+import shlex
 import typing
 
 Any = typing.Any
@@ -36,11 +37,12 @@ from .constants import Constants
 ##############################################################################
 
 class JumphostSsh():
-    def __init__(self, options: Any, host: str, username: str):
+    def __init__(self, options: Any, host: str, username: str, port: int):
         self.options = options
         self.connection = fabric.Connection(
                             host=str(host),
                             user=username,
+                            port=port,
                             connect_kwargs={
                                 "timeout": 3
                                 }
@@ -77,32 +79,59 @@ class JumphostSsh():
         except Exception as error:
             return False
 
-    def sudo(self, command: str, /, **sudo_kwargs) -> bool:
+    def sudo(self, command: str | list, /, show=False, **sudo_kwargs) -> fabric.Result | None:
         self.logger.debug("sudo")
         connection = self.connection
         options = self.options
+
+        if type(command) == list:
+            command = shlex.join(command)
+
+        if 'hide' in sudo_kwargs:
+            show = not sudo_kwargs['hide']
+            del sudo_kwargs['hide']
+
+        if not 'warn' in sudo_kwargs:
+            sudo_kwargs['warn'] = True
 
         try:
             result = connection.sudo(
                     command,
                     dry=options.noop,
+                    hide=not show,
                     **sudo_kwargs
                     )
             self.logger.debug("sudo results: %s", result)
-            return True
+            return result
         except Exception as error:
-            self.logger.error("sudo error", exc_info=error, stack_info=True)
-            return False
+            if options.debug:
+                self.logger.error("sudo error", exc_info=error, stack_info=True)
+            else:
+                self.logger.error("sudo %s failed", command)
+            return None
 
-    def do(self, command: str, /, **run_kwargs) -> fabric.Result | None:
+    def do(self, command: str | list, /, show=False, **run_kwargs) -> fabric.Result | None:
         self.logger.debug("do")
         connection = self.connection
         options = self.options
 
+        if type(command) == list:
+            command = shlex.join(command)
+
+        if 'hide' in run_kwargs:
+            show = not run_kwargs['hide']
+            del run_kwargs['hide']
+
+        if not 'warn' in run_kwargs:
+            run_kwargs['warn'] = True
+
         try:
-            result = connection.run(command, **run_kwargs)
+            result = connection.run(command, hide=not show, **run_kwargs)
             self.logger.debug("%s: result: %s", command, result)
             return result
         except Exception as error:
-            self.logger.error("do error", exc_info=error, stack_info=True)
+            if options.debug:
+                self.logger.error("do error", exc_info=error, stack_info=True)
+            else:
+                self.logger.error("do %s failed", command)
             return None
