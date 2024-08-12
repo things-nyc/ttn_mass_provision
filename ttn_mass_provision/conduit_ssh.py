@@ -43,7 +43,8 @@ class ConduitSsh():
                             user=options.username,
                             connect_kwargs={
                                 "password": options.password,
-                                "timeout": 3
+                                "timeout": 3,
+                                "allow_agent": False
                                 }
                             )
 
