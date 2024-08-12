@@ -79,28 +79,43 @@ class ConduitSsh():
         except Exception as error:
             return False
 
-    def sudo(self, command: str, /, **sudo_kwargs) -> bool:
+    def sudo(self, command: str, /, **kwargs) -> bool:
         self.logger.debug("sudo")
         connection = self.connection
         options = self.options
+
+        if not 'hide' in kwargs:
+            kwargs['hide'] = True
+
+        if not 'warn' in kwargs:
+            kwargs['warn'] = True
 
         try:
             result = connection.sudo(
                     command,
                     password=options.password,
                     dry=options.noop,
-                    **sudo_kwargs
+                    **kwargs
                     )
             self.logger.debug("sudo results: %s", result)
-            return True
+            return result
         except Exception as error:
-            self.logger.error("sudo error", exc_info=error, stack_info=True)
-            return False
+            if options.debug:
+                self.logger.error("sudo error", exc_info=error, stack_info=True)
+            else:
+                self.logger.error("sudo %s failed", command)
+            return None
 
     def do(self, command: str, /, **run_kwargs) -> fabric.Result | None:
         self.logger.debug("do")
         connection = self.connection
         options = self.options
+
+        if not 'hide' in run_kwargs:
+            run_kwargs['hide'] = True
+
+        if not 'warn' in run_kwargs:
+            run_kwargs['warn'] = True
 
         try:
             result = connection.run(command, **run_kwargs)

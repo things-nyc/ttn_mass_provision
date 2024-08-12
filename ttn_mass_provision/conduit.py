@@ -14,8 +14,11 @@
 ##############################################################################
 
 #### imports ####
+from dataclasses import dataclass
 import ipaddress
 import logging
+import pathlib
+import shlex
 import typing
 
 Any = typing.Any
@@ -137,7 +140,7 @@ class Conduit():
     ####################################
     # Get the gatway's public host key #
     ####################################
-    def get_gateway_public_key(self, /, timeout: int | None = None) -> bool:
+    def fetch_gateway_public_key(self, /, timeout: int | None = None) -> bool:
         c = self.ssh
         logger = self.logger
 
@@ -155,7 +158,7 @@ class Conduit():
     #################################
     # Get the MultiTech lora EUI-64 #
     #################################
-    def get_lora_eui64(self, /, timeout: int | None = None) -> bool:
+    def fetch_lora_eui64(self, /, timeout: int | None = None) -> bool:
         c = self.ssh
         logger = self.logger
 
@@ -198,3 +201,138 @@ class Conduit():
     ##############################################################################
     def get_jumphost_keepalive(self, jumphost: Jumphost) -> int | None:
         return (self.get_jumphost_userid(jumphost) - jumphost.first_uid) * 2 + jumphost.first_keepalive
+
+    #####################################
+    # Set up the tunnel to the jumphost #
+    #####################################
+
+    # set date using ntp
+    def set_date_using_ntp(self) -> bool:
+        logger = self.logger
+        answer = self.ssh.sudo("ntpdate -ub pool.ntp.org")
+        if answer == None:
+            return False
+        return answer.ok
+
+    def mkdir(self, path: str | pathlib.Path, mode: int, user: str = "root", group: str = "root") -> bool:
+        logger = self.logger
+        safepath = shlex.quote(str(path))
+        answer = self.ssh.sudo("mkdir -p -m %o %s" % (mode, safepath))
+        if answer == None or not answer.ok:
+            logger.error("%s: could not create %s with mode %o", self.mac, str(path), mode)
+            return False
+        answer = self.ssh.sudo("chmod %o %s" % (mode, safepath))
+        if answer == None or not answer.ok:
+            logger.error("%s: could not chmod %s to %o", self.mac, safepath)
+            return False
+        answer = self.ssh.sudo("chown %s.%s %s" % (shlex.quote(user), shlex.quote(group), safepath))
+        if answer == None or not answer.ok:
+            logger.error("%s: could not change owner of %s", self.mac, path)
+            return False
+        return True
+
+    def simplecmd(self, command: str, logfail: bool = True, /, **kwargs) -> bool:
+        logger = self.logger
+        options = self.options
+        if options.debug:
+            kwargs['hide'] = False
+            kwargs['echo'] = True
+
+        answer = self.ssh.sudo(command, **kwargs)
+        if answer == None or not answer.ok:
+            logger.error("%s: failed: %s", self.mac, command)
+            return False
+        return True
+
+    # the worker
+    def setup_jumphost_tunnel(self, jumphost: Jumphost, authorized_keys: list[str]) -> bool:
+        if not self.set_date_using_ntp():
+            return False
+
+        var_root = pathlib.Path("/var/config/home")
+        if not self.mkdir(var_root, 0o755):
+            return False
+        var_root = var_root / "root"
+        if not self.mkdir(var_root, 0o700):
+            return False
+        if not self.mkdir(var_root / ".ssh", 0x700):
+            return False
+
+        var_auth_keys = var_root / ".ssh/authorized_keys"
+        root_home = pathlib.Path("/home/root")
+        root_auth_keys = root_home / ".ssh/authorized_keys"
+        if not self.simplecmd("test -f " + str(var_auth_keys), logfail=False):
+            if self.simplecmd("test -f " + str(root_auth_keys), logfail=False):
+                if not self.simplecmd("sh -c " + shlex.quote(
+                    "cat " + str(root_auth_keys) + " >" + str(var_auth_keys)
+                    )):
+                    return False
+            else:
+                if not self.simplecmd("touch " + str(var_auth_keys)):
+                    return False
+            if not self.simplecmd("chmod 700 " + str(var_auth_keys)):
+                return False
+
+        # set contents of /var/config/... authorized_keys
+        cmd = "sh -c " + shlex.quote("printf '%s\n' >>" + str(var_auth_keys) + " " + shlex.join(authorized_keys))
+        if not self.simplecmd(cmd):
+            return False
+        if not self.simplecmd(f"sort -u -o {str(var_auth_keys)} {str(var_auth_keys)}"):
+            return False
+
+        # if no ~root/.ssh, link it
+        # if ~root/.ssh and not a link, rm and link it
+        # if ~root/.ssh and a link, simply relink it
+        var_root_ssh = var_root / ".ssh"
+        root_ssh = root_home / ".ssh"
+        if not self.simplecmd("test -d " + str(root_ssh), logfail=False):
+            if not self.simplecmd(f"ln -fs {str(var_root_ssh)} {root_home}"):
+                return False
+        elif not self.simplecmd(f"test -L {root_ssh}", logfail=False):
+            # somewhat unpleasant and not atomic, but....
+            if not self.simplecmd(f"mv {str(root_ssh)} {str(root_home / ".ssh_old")}"):
+                return False
+            if not self.simplecmd(f"ln -s {str(var_root_ssh)} {root_home}"):
+                return False
+        else:
+            # atomic update: maybe no change
+            if not self.simplecmd(f"ln -fs {str(var_root_ssh)} {root_home}"):
+                return False
+
+        # now the ssh_tunnel defaults
+        ssh_tunnel_lines = [
+            "DAEMON=/usr/bin/autossh",
+            "LOCAL_PORT=22",
+            f"REMOTE_HOST={jumphost.hostname}",
+            f"REMOTE_USER={self.hostname}",
+            f"REMOTE_PORT={self.get_jumphost_reverse_socket(jumphost)}",
+            'SSH_KEY="/etc/ssh/ssh_host_rsa_key.pub"',
+            "SSH_PORT=22",
+            f'DAEMON_ARGS="-f -M {self.get_jumphost_keepalive(jumphost)} -o ServerAliveInterval=30 -o StrictHostKeyChecking=no -i /etc/ssh/ssh_host_rsa_key"',
+            ]
+
+        default_tunnel_config=pathlib.Path("/etc/default/ssh_tunnel")
+        cmd = "sh -c " + shlex.quote("printf '%s\n' >>" + str(default_tunnel_config) + " " + shlex.join(ssh_tunnel_lines))
+        if not self.simplecmd(cmd):
+            return False
+
+        if not self.simplecmd(f"chmod 755 {str(default_tunnel_config)}"):
+            return False
+        if not self.simplecmd(f"chown root.root {str(default_tunnel_config)}"):
+            return False
+
+        # copy the ssh tunnel file.
+        default_tunnel_script=pathlib.Path("/etc/init.d/ssh_tunnel")
+        cmd = "sh -c " + shlex.quote("printf '%s\n' >>" + str(default_tunnel_script) + " " + shlex.join(self.settings["ssh_tunnel_script"]))
+        if not self.simplecmd(cmd):
+            return False
+
+        if not self.simplecmd(f"chmod 755 {str(default_tunnel_script)}"):
+            return False
+        if not self.simplecmd(f"chown root.root {str(default_tunnel_script)}"):
+            return False
+
+        if not self.simplecmd(f"{str(default_tunnel_script)} restart"):
+            return False
+
+        return True

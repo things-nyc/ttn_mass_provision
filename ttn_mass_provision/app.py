@@ -52,6 +52,9 @@ class App():
         # load the settings -- must be before parsing args
         self._load_settings()
 
+        self._load_authorized_keys()
+        self._load_ssh_tunnel()
+
         # now parse the args
         self.organization : Settings.Organization | None = None
         options = self._parse_arguments()
@@ -95,6 +98,32 @@ class App():
         settings_dict: dict = jsons.loads(settings_text)
         self.settings = settings_dict
 
+    # load the authorized keys
+    def _load_authorized_keys(self):
+        # read the public keys file
+        conduit_authorized_key_file = importlib_files("ttn_mass_provision").joinpath("conduit_authorized_keys.pub")
+        if not conduit_authorized_key_file.is_file():
+            raise self.Error(f"Can't find authorized keys file: {conduit_authorized_key_file}")
+        try:
+            conduit_authorized_key_text = conduit_authorized_key_file.read_text()
+        except Exception as e:
+            raise self.Error(f"Can't read: {conduit_authorized_key_text}: {e}")
+
+        self.authorized_keys: list = [ x.strip() for x in conduit_authorized_key_text.splitlines() ]
+
+    # load the ssh_tunnel script
+    def _load_ssh_tunnel(self):
+        # read the public keys file
+        ssh_tunnel_file = importlib_files("ttn_mass_provision").joinpath("ssh_tunnel")
+        if not ssh_tunnel_file.is_file():
+            raise self.Error(f"Can't find ssh_tunnel file: {ssh_tunnel_file}")
+        try:
+            ssh_tunnel_text = ssh_tunnel_file.read_text()
+        except Exception as e:
+            raise self.Error(f"Can't read: {ssh_tunnel_text}: {e}")
+
+        self.settings["ssh_tunnel_script"] = [ line.strip() for line in ssh_tunnel_text.splitlines() ]
+
     class Error(Exception):
         """ this is the Exception thrown by class App """
         pass
@@ -110,6 +139,11 @@ class App():
         if not self.inventory_dir.is_dir():
             self.logger.error("not a directory: %s", str(self.inventory_dir))
             sys.exit(1)
+
+        if len(self.jumphosts) != 1:
+            self.logger.error(f"{len(self.jumphosts)=}; can never be zero and for now must be exactly 1")
+            sys.exit(1)
+
         pass
 
     ##########################################################################
@@ -328,7 +362,7 @@ class App():
     def get_host_keys(self) -> bool:
         result : bool = True
         for conduit in self.conduits:
-            if not conduit.get_gateway_public_key():
+            if not conduit.fetch_gateway_public_key():
                 self.logger.error("Can't get host key for %s", conduit.mac)
                 result = False
         return result
@@ -339,7 +373,7 @@ class App():
     def get_lora_eui64(self) -> bool:
         result : bool = True
         for conduit in self.conduits:
-            if not conduit.get_lora_eui64():
+            if not conduit.fetch_lora_eui64():
                 self.logger.error("Can't get LoRa EUI64 for %s", conduit.mac)
                 result = False
         return result
@@ -406,6 +440,20 @@ class App():
 
         return result
 
+    # set up the jumphost tunnels on each gateway
+    def setup_jumphost_tunnels_on_gateways(self) -> bool:
+        # we know that there is exactly one jumphost, but we
+        # code for multiple here and block it above.
+        logger = self.logger
+        result = True
+        for conduit in self.conduits:
+            for jumphost in self.jumphosts:
+                if not conduit.setup_jumphost_tunnel(jumphost, authorized_keys=self.authorized_keys):
+                    result = False
+                    logger.error("%s: %s: failed to set up tunnel", conduit.mac, jumphost.hostname)
+
+        return result
+
     #################################
     # Run the app and return status #
     #################################
@@ -464,6 +512,11 @@ class App():
         # create users for each of the gateways in each of the jumphots
         if not self.create_gateway_users_on_jumphosts():
             logger.error("create_gateway_users_on_jumphosts() failed")
+            return 1
+
+        # setup the tunnels for each of the gateways
+        if not self.setup_jumphost_tunnels_on_gateways():
+            logger.error("setup_jumphost_tunnels_on_gateways failed")
             return 1
 
         logger.info("all done")
