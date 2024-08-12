@@ -19,6 +19,7 @@ import ipaddress
 import logging
 import pathlib
 import shlex
+import time
 import typing
 
 Any = typing.Any
@@ -209,10 +210,14 @@ class Conduit():
     # set date using ntp
     def set_date_using_ntp(self) -> bool:
         logger = self.logger
-        answer = self.ssh.sudo("ntpdate -ub pool.ntp.org")
-        if answer == None:
-            return False
-        return answer.ok
+        for i in range(3):
+            answer = self.ssh.sudo("ntpdate -ub pool.ntp.org")
+            if answer != None and answer.ok:
+                return True
+            time.sleep(10)
+
+        logger.error("%s: ntp date failed 3 times", self.mac)
+        return False
 
     def mkdir(self, path: str | pathlib.Path, mode: int, user: str = "root", group: str = "root") -> bool:
         logger = self.logger
