@@ -123,8 +123,8 @@ class Conduit():
     # Generate the hostname for this Conduit #
     ##########################################
     def generate_hostname(self, prefix: str) -> bool:
-        hostname_prefix = prefix + self.mac.replace('-', '')
-        self.hostname = hostname_prefix
+        hostname_prefix = prefix
+        self.hostname = hostname_prefix + self.mac
         self.logger.debug("%s: hostname set to %s", self.mac, self.hostname)
         return True
 
