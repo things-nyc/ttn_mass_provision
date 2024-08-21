@@ -19,6 +19,12 @@
                     "device_type": "Conduit 210L",
                     "has_cellular": false
                 },
+	    "MTCDT-L4N1-240A":
+                {
+                    "device_class": "Conduit 2",
+                    "device_type": "Conduit 240L",
+                    "has_cellular": true
+                },
             "MTCDT-246L":
                 {
                     "device_class": "Conduit 2",
