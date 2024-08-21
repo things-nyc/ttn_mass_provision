@@ -240,7 +240,7 @@ class App():
                 raise self.Error(
                     f"can't convert Organization() for organization {options.organization:s}: check settings.json: {e}")
         else:
-            print("not a valid organization: %s", options.organization)
+            print("not a valid organization: %s" % options.organization)
             sys.exit(1)
 
         # now, get the jumphosts
