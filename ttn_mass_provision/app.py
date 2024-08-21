@@ -23,6 +23,7 @@ import ipaddress
 import jsons
 import logging
 import pathlib
+import re
 import sys
 import time
 import typing
@@ -292,6 +293,7 @@ class App():
     ##################################################
     # Find all the MultiTech gateways on the network #
     ##################################################
+    ARP_RE = re.compile(r'\S+ \((?P<ip>[0-9.]+)\) at (?P<macaddr>0?0:0?8:0?0(:[0-9a-fA-F]?[0-9a-fA-F]){3})\s')
     def find_conduits(self) -> bool:
         options = self.args
         logger = self.logger
@@ -307,28 +309,29 @@ class App():
             logger.error("mass ping failed: %s", error)
             return False
 
-        # grab the arp buffer
+        # grab the arp table
+        cmd = "arp -an"
         try:
-            with open("/proc/net/arp", "r") as f:
-                arplist = f.read().splitlines()[1:]
+            logger.debug("Running %s", cmd)
+            result = invoke.run(cmd, out_stream=stdout)
         except Exception as error:
-            logger.error("arp read failed: %s", error)
+            logger.error("%s failed: %s", cmd, error)
             return False
 
-        # for each line, split and match
         conduits: List[Conduit] = []
-        for line in arplist:
-            fields = line.split()
-            macaddr = fields[3]
-            if macaddr.startswith("00:08:00:"):
-                conduits.append(
-                    Conduit(
-                        ip=ipaddress.IPv4Address(fields[0]),
-                        mac=macaddr.replace(':', '-'),
-                        options=options,
-                        settings=self.settings
-                        )
-                    )
+        for line in result.stdout.split('\n'):
+            match = ARP_RE.match(line)
+            if not match:
+                continue
+            macaddr = '-'.join(["%02x" % int(hex, 16) for hex in match.group('macaddr').split(':')])
+            conduits.append(
+                Conduit(
+                    ip=ipaddress.IPv4Address(match.group('ip')),
+                    mac=macaddr,
+                    options=options,
+                    settings=self.settings
+                )
+            )
         self.conduits = conduits
         self.conduits.sort(key=lambda conduit: conduit.mac)
         return True
