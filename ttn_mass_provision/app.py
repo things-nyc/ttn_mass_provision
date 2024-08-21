@@ -301,7 +301,7 @@ class App():
         stdout = io.StringIO()
 
         hosts = ' '.join([ str(host) for host in options.address.hosts()])
-        cmd = "for i in %s; do { ( ping -c2 -W1 $i |& grep -q '0 received' || echo $i ; ) & disown; } done" % hosts
+        cmd = "for i in %s; do { ( ping -c2 -W1 $i 2>&1 | grep -q '0 received' || echo $i ; ) & disown; } done" % hosts
         try:
             logger.debug("launch command: %s", cmd)
             result = invoke.run(cmd, out_stream=stdout)
