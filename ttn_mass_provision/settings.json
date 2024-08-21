@@ -52,6 +52,13 @@
                     "prefix": "ttn-nyc-",
                     "org_dir": "org-ttnnyc-gateways",
                     "jumphosts": [ "jumphost.ttni.tech" ]
+                },
+            "ttn-ithaca":
+                {
+                    "description": "The Things Network Ithaca",
+                    "prefix": "ttn-ithaca-",
+                    "org_dir": "org-ttn-ithaca-gateways",
+                    "jumphosts": [ "jumphost.ttni.tech" ]
                 }
         },
     "jumphosts":
