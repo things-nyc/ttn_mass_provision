@@ -340,4 +340,8 @@ class Conduit():
         if not self.simplecmd(f"{str(default_tunnel_script)} restart"):
             return False
 
+        # make sure the tunnel gets started.
+        if not self.simplecmd("update-rc.d ssh_tunnel defaults 95 30"):
+            return False
+
         return True
