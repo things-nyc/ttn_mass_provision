@@ -317,7 +317,7 @@ class Conduit():
             ]
 
         default_tunnel_config=pathlib.Path("/etc/default/ssh_tunnel")
-        cmd = "sh -c " + shlex.quote("printf '%s\n' >>" + str(default_tunnel_config) + " " + shlex.join(ssh_tunnel_lines))
+        cmd = "sh -c " + shlex.quote("printf '%s\n' >" + str(default_tunnel_config) + " " + shlex.join(ssh_tunnel_lines))
         if not self.simplecmd(cmd):
             return False
 
@@ -328,7 +328,7 @@ class Conduit():
 
         # copy the ssh tunnel file.
         default_tunnel_script=pathlib.Path("/etc/init.d/ssh_tunnel")
-        cmd = "sh -c " + shlex.quote("printf '%s\n' >>" + str(default_tunnel_script) + " " + shlex.join(self.settings["ssh_tunnel_script"]))
+        cmd = "sh -c " + shlex.quote("printf '%s\n' >" + str(default_tunnel_script) + " " + shlex.join(self.settings["ssh_tunnel_script"]))
         if not self.simplecmd(cmd):
             return False
 
