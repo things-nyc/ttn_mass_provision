@@ -293,8 +293,8 @@ class App():
     ##################################################
     # Find all the MultiTech gateways on the network #
     ##################################################
-    ARP_RE = re.compile(r'\S+ \((?P<ip>[0-9.]+)\) at (?P<macaddr>0?0:0?8:0?0(:[0-9a-fA-F]?[0-9a-fA-F]){3})\s')
     def find_conduits(self) -> bool:
+        ARP_RE = re.compile(r'\S+ \((?P<ip>[0-9.]+)\) at (?P<macaddr>0?0:0?8:0?0(:[0-9a-fA-F]?[0-9a-fA-F]){3})\s')
         options = self.args
         logger = self.logger
 
