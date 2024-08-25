@@ -42,6 +42,12 @@
                     "device_class": "Conduit 2",
                     "device_type": "Conduit 246L",
                     "has_cellular": true
+                },
+            "MTCDT-LAT1-246A":
+                {
+                    "device_class": "Conduit 2",
+                    "device_type": "Conduit 246L",
+                    "has_cellular": true
                 }
         },
     "organizations":
