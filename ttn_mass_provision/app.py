@@ -326,19 +326,24 @@ class App():
             return False
 
         conduits: List[Conduit] = []
+        macaddrs = dict()
         for line in result.stdout.split('\n'):
             match = ARP_RE.match(line)
             if not match:
                 continue
             macaddr = '-'.join(["%02x" % int(hex, 16) for hex in match.group('macaddr').split(':')])
-            conduits.append(
-                Conduit(
-                    ip=ipaddress.IPv4Address(match.group('ip')),
-                    mac=macaddr,
-                    options=options,
-                    settings=self.settings
+            if macaddr in macaddrs:
+                logger.info("duplicate macaddr: %s", macaddr)
+            else:
+                conduits.append(
+                    Conduit(
+                        ip=ipaddress.IPv4Address(match.group('ip')),
+                        mac=macaddr,
+                        options=options,
+                        settings=self.settings
+                    )
                 )
-            )
+                macaddrs[macaddr] = True
         self.conduits = conduits
         self.conduits.sort(key=lambda conduit: conduit.mac)
         return True
