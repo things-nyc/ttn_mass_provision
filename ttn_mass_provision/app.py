@@ -200,11 +200,18 @@ class App():
                         dest="address", default=Constants.DEFAULT_IP_ADDRESS,
                         help="IP address of the network holding the Conduits, as IpV4 addr/bits (default %(default)s).")
 
+        group.add_argument("--skip-if-ssh-fails", "-S",
+                        dest="skip_if_ssh_fails",
+                        action='store_true',
+                        help="skip any candidate gateway if not able to log in with SSH, rather than failing"
+                        )
+
         group = parser.add_argument_group("Provisioning options")
         group.add_argument("--organization",
                         dest="organization",
                         default=Constants.DEFAULT_ORG_NAME,
                         help="default organization name (default %(default)s).")
+
 
         options = parser.parse_args()
         if options.debug:
@@ -475,17 +482,32 @@ class App():
         logger.info("found %d conduits: %s", len(self.conduits), [ str(x) for x in self.conduits ])
 
         no_ssh: List[str] = []
+        good_ssh: List[Conduit] = []
 
         for conduit in self.conduits:
             logger.info("check ssh for %s", str(conduit.ip))
             if not conduit.check_ssh_enabled():
-                no_ssh.append(str(conduit.ip))
+                no_ssh.append(f"{conduit.mac}({str(conduit.ip)})")
+            else:
+                good_ssh.append(conduit)
 
         if len(no_ssh) > 0:
-            logger.error("%d Conduits could not be reached: %s", len(no_ssh), ', '.join(no_ssh))
-            return 1
-
-        logger.info("all %d Conduits were reachable", len(self.conduits))
+            if not options.skip_if_ssh_fails:
+                logger.error("%d Conduits could not be reached: %s", len(no_ssh), ', '.join(no_ssh))
+                return 1
+            elif len(good_ssh) == 0:
+                logger.error("No Conduits could be reached; failing: %s",
+                            ', '.join(no_ssh)
+                             )
+                return 1
+            else:
+                logger.info("%d Conduits could not be reached, skipping: %s",
+                            len(no_ssh),
+                            ', '.join(no_ssh)
+                           )
+                self.conduits = good_ssh
+        else:
+            logger.info("all %d Conduits were reachable", len(self.conduits))
 
         # get all the product IDs for the Conduits
         if not self.get_product_ids():
