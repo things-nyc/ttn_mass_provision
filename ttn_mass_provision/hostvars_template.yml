@@ -1,0 +1,28 @@
+---
+#
+# Organizational-Params
+#	GROUP=conduits.production
+
+# Hostname.
+hostname: {hostname}
+
+# Define this to use an ssh tunnel.  Leave undefined or set to '0' to
+# disable ssh tunnel.
+ssh_tunnel_remote_port: {remote_port}
+ssh_tunnel_keepalive_base_port: {keepalive_port}
+ssh_tunnel_local_port: 22	# used by gateway
+
+ansible_host: localhost
+ansible_port: "{{{{ ssh_tunnel_remote_port }}}}"
+
+ansible_user: root
+
+eth0_type: dhcp
+
+# Descriptive location of the gateway
+description: '{description}'
+
+# Location, use -1 for altitude if not known.
+latitude: 0
+longitude: 0
+altitude: -1
