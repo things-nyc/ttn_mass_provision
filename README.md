@@ -63,14 +63,12 @@ git clone git@github.com:things-nyc/ttn_mass_provision
 cd ttn_mass_provision
 
 # after cloning, create the .venv
-python3 -m venv .venv
+make venv
 
 # set up the virtual environment
+# follow the prompt, but normally:
 source .venv/bin/activate
 
-# get the remaining requirements into the virtual environment
-python3 -m pip install -r requirements.txt
-
 # make sure the script is functional
-python3 -m ttn_mass_provision --help
+python -m ttn_mass_provision --help
 ```
