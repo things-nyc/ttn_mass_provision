@@ -26,6 +26,9 @@ ACTIVATE=${VENV_SCRIPTS}/activate
 # the default python
 PYTHON=python3
 
+# the python for VENVs
+PYTHON_VENV=python
+
 #
 # Default target: print help.
 #
@@ -49,10 +52,10 @@ help:
 .buildenv:
 	$(PYTHON) -m venv .buildenv
 	source .buildenv/$(ACTIVATE) && \
-		$(PYTHON) -m pip install build
+		$(PYTHON_VENV) -m pip install build
 
 build:	.buildenv
-	source .buildenv/$(ACTIVATE) && $(PYTHON) -m build
+	source .buildenv/$(ACTIVATE) && $(PYTHON_VENV) -m build
 	@printf "%s\n" "distribution files are in the dist directory:" && ls dist
 
 #
@@ -60,9 +63,9 @@ build:	.buildenv
 #    .venv creates the virtual environment and installs requirements
 #    venv does the same, but tells you how to use the venv.
 #
-.venv: requirements.txt
+.venv:
 	$(PYTHON) -m venv .venv
-	. .venv/$(ACTIVATE) && $(PYTHON) -m pip install -r requirements.txt
+	source .venv/$(ACTIVATE) && $(PYTHON_VENV) -m pip install -r requirements.txt
 
 venv:	.venv
 	@printf "%s\n" \
@@ -71,6 +74,12 @@ venv:	.venv
 		"To activate in bash, say:" \
 		"    source .venv/${ACTIVATE}" \
 		""
+	@if [ "${PYTHON_VENV}" != "${PYTHON}" ]; then \
+		printf "%s\n" \
+			"Then be sure to run the app using ${PYTHON_VENV} (not ${PYTHON})" \
+			"" \
+		; \
+	fi
 
 #
 # maintenance targets
