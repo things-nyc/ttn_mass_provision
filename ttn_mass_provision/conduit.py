@@ -295,7 +295,7 @@ class Conduit():
                 return False
         elif not self.simplecmd(f"test -L {root_ssh}", logfail=False):
             # somewhat unpleasant and not atomic, but....
-            if not self.simplecmd(f"mv {str(root_ssh)} {str(root_home / ".ssh_old")}"):
+            if not self.simplecmd(f"mv {str(root_ssh)} {str(root_home / '.ssh_old')}"):
                 return False
             if not self.simplecmd(f"ln -s {str(var_root_ssh)} {root_home}"):
                 return False
