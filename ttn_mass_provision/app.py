@@ -378,7 +378,7 @@ class App():
         result : bool = True
         for conduit in self.conduits:
             if not conduit.fetch_gateway_public_key():
-                self.logger.error("Can't get host key for %s", conduit.mac)
+                self.logger.error("Can't get host key for %s. This shouldn't happen; it probably means that the gateway operating system is corrupt, or that you don't have an ssh agent running.", conduit.mac)
                 result = False
         return result
 
@@ -405,7 +405,7 @@ class App():
             logger.info("%s: confirm gateway_group %s", jumphost.hostname, gateway_group)
             if not jumphost.create_gateway_group(gateway_group):
                 result = False
-                logger.debug("failed to create group %s for organization %s on jumphost %s",
+                logger.error("Failed to create group %s for organization %s on jumphost %s. Check that you have an ssh agent running, and that you cah ssh to the jumphost and sudo to become root.",
                              gateway_group, organization.id, jumphost.hostname
                              )
         return result
@@ -433,7 +433,7 @@ class App():
                 current_uid = jumphost.create_jumphost_user(desired_uid=userid, gateway_id=username, gateway_name=username, gateway_groupname=gateway_group)
                 if current_uid == None:
                     result = False
-                    logger.debug("failed to create user %s (uid %s) for gateway %s on jumphost %s",
+                    logger.error("failed to create user %s (uid %s) for gateway %s on jumphost %s. Check that you have an ssh agent running, and that you cah ssh to the jumphost and sudo to become root.",
                                  username,
                                  "auto" if userid == None else str(userid),
                                  conduit.mac, jumphost.hostname
@@ -450,7 +450,7 @@ class App():
                         username=username,
                         gateway_group=gateway_group
                         ):
-                        logger.error("%s: %s: failed to create ssh entries for user %s", conduit.mac, jumphost.hostname, username)
+                        logger.error("%s: %s: failed to create ssh entries for user %s. Check that you have an ssh agent running, and that you cah ssh to the jumphost and sudo to become root.", conduit.mac, jumphost.hostname, username)
                         result = False
 
         return result
@@ -477,7 +477,7 @@ class App():
         logger = self.logger
 
         if not self.check_jumphosts():
-            logger.error("not all jumphosts available")
+            logger.error("not all jumphosts available. Check that you have an ssh agent running, and that you cah ssh to the jumphost and sudo to become root.")
             return 1
 
         if not self.find_conduits():

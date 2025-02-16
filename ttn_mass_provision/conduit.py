@@ -216,7 +216,7 @@ class Conduit():
                 return True
             time.sleep(10)
 
-        logger.error("%s: ntp date failed 3 times", self.mac)
+        logger.error("%s: 'ntpdate -ub pool.ntp.org' failed 3 times on the gateway. Check that the gateway has access to the internet and that DNS is working on the gateway.", self.mac)
         return False
 
     def mkdir(self, path: str | pathlib.Path, mode: int, user: str = "root", group: str = "root") -> bool:
