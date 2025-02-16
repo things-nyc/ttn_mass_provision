@@ -13,6 +13,12 @@
                     "device_type": "Conduit 210L",
                     "has_cellular": false
                 },
+            "MTCDT-LVW2-210A":
+                {
+                    "device_class": "Conduit 2",
+                    "device_type": "Conduit 210L",
+                    "has_cellular": true
+                },
             "MTCDT-210A":
                 {
                     "device_class": "Conduit 2",
