@@ -389,7 +389,7 @@ class App():
         result : bool = True
         for conduit in self.conduits:
             if not conduit.fetch_lora_eui64():
-                self.logger.error("Can't get LoRa EUI64 for %s", conduit.mac)
+                self.logger.error("Can't get LoRa EUI64 for %s. Usually this means the LoRa card is missing or not working.", conduit.mac)
                 result = False
         return result
 
