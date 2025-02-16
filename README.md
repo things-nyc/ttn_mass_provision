@@ -11,13 +11,22 @@
 <!-- don't complain about starting bulleted list with '*' -->
 <!-- markdownlint-capture -->
 <!-- markdownlint-disable -->
-<!-- TOC depthfrom:2 updateonsave:true -->
+<!-- TOC depthFrom:2 updateOnSave:true -->
 
 - [Introduction](#introduction)
     - [Preconditions](#preconditions)
     - [Post conditions](#post-conditions)
 - [Logistics](#logistics)
     - [Set up this script from a Python virtual environment](#set-up-this-script-from-a-python-virtual-environment)
+- [Running the program](#running-the-program)
+- [Important gotchas](#important-gotchas)
+- [Meta](#meta)
+    - [Git repo (for code and issues)](#git-repo-for-code-and-issues)
+    - [Author](#author)
+    - [Status](#status)
+    - [Future Directions](#future-directions)
+    - [Prerequisites](#prerequisites)
+    - [License](#license)
 
 <!-- /TOC -->
 <!-- markdownlint-restore -->
@@ -72,3 +81,45 @@ source .venv/bin/activate
 # make sure the script is functional
 python -m ttn_mass_provision --help
 ```
+
+## Running the program
+
+In most cases, the following command will work:
+
+```bash
+python -m ttn_mass_provision -P {password} -vvv
+```
+
+Messages containing the string "ERROR:" indicate that something has gone wrong and that the program didn't work. If you can't figure out why you're getting an error, try adding the `--debug` option to the command line.
+
+## Important gotchas
+
+#. __*DO NOT*__ use the command `python3` to launch `ttn_mass_provision` when running in a `.venv`.  For some reason, they replace `python` in the virtual environment but they don't bother to replace `python3`. So you'll get the wrong python, and things will fail mysteriously.
+
+#. Watch out for tab completion when writing the command. On many systems, if you use `<tab>` to auto comlpete `ttn_mass_provision`, you'll get a trailing `/`.  THe command `python -m ttn_mass_provision/` typically does not work.
+
+## Meta
+
+### Git repo (for code and issues)
+
+https://github.com/things-nyc/ttn_mass_provision
+
+### Author
+
+Terry Moore
+
+### Status
+
+2025-02-15: This tool works, but it's rough, especially when it comes to error handling.
+
+### Future Directions
+
+* See [Issues](https://github.com/things-nyc/ttn_mass_provision/issues) page on GitHub.
+
+### Prerequisites
+
+V0.9.0-pre3 was tested on macOS 14.6.1 arm64 (as reported by `sw_vers`) with python3 v3.12.4. It's also been tested on Debian with Python v3.11.
+
+### License
+
+Released under MIT license.
