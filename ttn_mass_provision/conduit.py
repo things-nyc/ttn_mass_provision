@@ -38,9 +38,9 @@ from .settings import Settings
 ##############################################################################
 
 class Conduit():
-    def __init__(self, ip: Union[ipaddress.IPv4Address, str], mac: str, options, settings: dict):
+    def __init__(self, ip: Union[ipaddress.IPv4Address, str], mac: str | None, options, settings: dict):
         self.ip = ipaddress.IPv4Address(ip)
-        self.mac = mac
+        self.mac : str = mac if mac != None else '<<unknown>>'
         self.logger = logging.getLogger(__name__)
         logger = self.logger
         self.options = options
@@ -65,6 +65,15 @@ class Conduit():
             logger.setLevel('WARNING')
 
         pass
+
+    #
+    # do we know conduit mac address?
+    #
+    def is_mac_known(self) -> bool:
+        if self.mac == '<<unknown>>':
+            return False
+        else:
+            return True
 
     def __str__(self):
         return self.mac
@@ -103,6 +112,27 @@ class Conduit():
         logger.info("product_id for %s: %s", self.mac, product_id)
         self.product_id = product_id
 
+        return True
+
+    #########################################
+    # Get the MultiTech Conduit mac address #
+    #########################################
+    def get_mac_address(self, /, timeout: int | None = None) -> bool:
+        c = self.ssh
+        logger = self.logger
+
+        if self.is_mac_known():
+            logger.error("mac address for ip %s is already set to %s", self.ip, self.mac)
+            return False
+
+        result = c.do("cat /sys/class/net/eth0/address", hide=True)
+        if result == None or not result.ok:
+            return False
+
+        mac_with_colons: str = result.stdout.splitlines()[0]
+        macaddr = '-'.join(["%02x" % int(hex, 16) for hex in mac_with_colons.split(':')])
+        logger.info("raw mac address for %s: %s -> %s", self.ip, mac_with_colons, macaddr)
+        self.mac = macaddr
         return True
 
     ###################################################

@@ -199,7 +199,9 @@ class App():
         group.add_argument("--address", "-A",
                         dest="address", default=Constants.DEFAULT_IP_ADDRESS,
                         help="IP address of the network holding the Conduits, as IpV4 addr/bits (default %(default)s).")
-
+        group.add_argument("--manual", "-M",
+                        dest="manual_addresses",
+                        help="Comma-separated list of addresses for target gateways. Defeats arp scan if given")
         group.add_argument("--skip-if-ssh-fails", "-S",
                         dest="skip_if_ssh_fails",
                         action='store_true',
@@ -297,10 +299,10 @@ class App():
         logger.debug("check_jumphosts -> %s", result)
         return result
 
-    ##################################################
-    # Find all the MultiTech gateways on the network #
-    ##################################################
-    def find_conduits(self) -> bool:
+    #####################################################################
+    # Find all the MultiTech gateways on the network using ping and arp #
+    #####################################################################
+    def _find_conduits_using_arp(self) -> bool:
         ARP_RE = re.compile(r'\S+ \((?P<ip>[0-9.]+)\) at (?P<macaddr>0?0:0?8:0?0(:[0-9a-fA-F]?[0-9a-fA-F]){3})\s')
         options = self.args
         logger = self.logger
@@ -347,6 +349,51 @@ class App():
         self.conduits = conduits
         self.conduits.sort(key=lambda conduit: conduit.mac)
         return True
+
+    #
+    # find conduits given a list of IPv4 addresses
+    #
+    def _find_conduits_using_addresses(self, addresses: List[str]) -> bool:
+        options = self.args
+        logger = self.logger
+        logger.debug("_find_conduits_using_addresses: %s", str(addresses))
+        conduits: List[Conduit] = []
+        for address in addresses:
+            conduits.append(
+                Conduit(
+                    ip=ipaddress.IPv4Address(address),
+                    mac=None,
+                    options=options,
+                    settings=self.settings
+                    )
+                )
+        self.conduits = conduits
+        return len(conduits) > 0
+
+    #
+    # find conduits
+    #
+    def find_conduits(self) -> bool:
+        options = self.args
+        if options.manual_addresses == None:
+            return self._find_conduits_using_arp()
+        else:
+            addresses = options.manual_addresses.split(',')
+            return self._find_conduits_using_addresses(addresses)
+
+    #################################################
+    # Make sure all the Conduits have mac addresses #
+    #################################################
+    def get_mac_addresses(self) -> bool:
+        result : bool = True
+        for conduit in self.conduits:
+            if not conduit.is_mac_known():
+                if not conduit.get_mac_address():
+                    result = False
+        if result:
+            self.conduits.sort(key=lambda conduit: conduit.mac)
+
+        return result
 
     ##################################
     # Populate the Conduit type info #
@@ -513,6 +560,11 @@ class App():
                 self.conduits = good_ssh
         else:
             logger.info("all %d Conduits were reachable", len(self.conduits))
+
+        # make sure all the mac addresses are set
+        if not self.get_mac_addresses():
+            logger.error("get_mac_addresses() failed")
+            return 1
 
         # get all the product IDs for the Conduits
         if not self.get_product_ids():
