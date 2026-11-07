@@ -67,6 +67,16 @@ If successful, this script establishes the following post conditions.
 
 This needs [uv](https://docs.astral.sh/uv/getting-started/installation/); uv fetches a suitable Python (3.11 or later) if the system doesn't have one.
 
+On Linux or macOS, install uv with:
+
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
+The installer puts `uv` in `~/.local/bin` and adds that directory to `PATH` in your shell startup files. Open a new shell (or source the env file it names, usually `~/.local/bin/env`) before going on. The [installation page](https://docs.astral.sh/uv/getting-started/installation/) covers Windows and other methods.
+
+Then set up the program:
+
 ```bash
 git clone git@github.com:things-nyc/ttn_mass_provision
 cd ttn_mass_provision
@@ -98,9 +108,9 @@ Messages containing the string "ERROR:" indicate that something has gone wrong a
 
 ## Important gotchas
 
-#. If you activate `.venv` and run `python -m ttn_mass_provision` instead of `uv run`, use `python`, not `python3`. Some virtual environments replace `python` but not `python3`, so `python3` runs the system Python, which lacks the dependencies.
+1. If you activate `.venv` and run `python -m ttn_mass_provision` instead of `uv run`, use `python`, not `python3`. Some virtual environments replace `python` but not `python3`, so `python3` runs the system Python, which lacks the dependencies.
 
-#. Watch out for tab completion when writing a `python -m` command. On many systems, if you use `<tab>` to complete `ttn_mass_provision`, you'll get a trailing `/`.  The command `python -m ttn_mass_provision/` typically does not work.
+2. Watch out for tab completion when writing a `python -m` command. On many systems, if you use `<tab>` to complete `ttn_mass_provision`, you'll get a trailing `/`.  The command `python -m ttn_mass_provision/` typically does not work.
 
 ## Meta
 
