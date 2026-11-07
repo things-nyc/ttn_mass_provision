@@ -3,7 +3,7 @@
 # Name: pyproject.toml
 #
 # Function:
-#       Stub pyproject.toml: see https://pybit.es/articles/how-to-package-and-deploy-cli-apps/
+#       Project metadata and build settings for ttn_mass_provision.
 #
 # Copyright notice and license:
 #       See LICENSE.md
@@ -13,6 +13,37 @@
 #
 ##############################################################################
 
+[project]
+name = "ttn_mass_provision"
+dynamic = ["version"]
+description = "Provision MultiTech Conduits running TTN Ithaca mLinux for use with ttn-multitech-cm"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE.md"]
+authors = [{ name = "Terry Moore" }]
+requires-python = ">=3.11"
+dependencies = [
+    "fabric >= 3.2.2",
+    "invoke >= 2.2.0",
+    "jsons >= 1.6.3",
+]
+
+[project.scripts]
+ttn_mass_provision = "ttn_mass_provision.__main__:main"
+
+[project.urls]
+Repository = "https://github.com/things-nyc/ttn_mass_provision"
+Issues = "https://github.com/things-nyc/ttn_mass_provision/issues"
+
 [build-system]
 build-backend = "setuptools.build_meta"
-requires = ["setuptools", "wheel"]
+requires = ["setuptools >= 77"]
+
+[tool.setuptools]
+packages = ["ttn_mass_provision"]
+
+[tool.setuptools.dynamic]
+version = { attr = "ttn_mass_provision.__version__.__version__" }
+
+[tool.setuptools.package-data]
+ttn_mass_provision = ["*.json", "*.pub", "ssh_tunnel"]

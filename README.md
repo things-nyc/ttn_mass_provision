@@ -17,7 +17,7 @@
     - [Preconditions](#preconditions)
     - [Post conditions](#post-conditions)
 - [Logistics](#logistics)
-    - [Set up this script from a Python virtual environment](#set-up-this-script-from-a-python-virtual-environment)
+    - [Set up this script with uv](#set-up-this-script-with-uv)
 - [Running the program](#running-the-program)
 - [Important gotchas](#important-gotchas)
 - [Meta](#meta)
@@ -63,23 +63,27 @@ If successful, this script establishes the following post conditions.
 
 ## Logistics
 
-### Set up this script from a Python virtual environment
+### Set up this script with uv
 
-This is the recommended approach, as it doesn't require making any global environment changes other than installing python3.  We tested with Python 3.12.3.
+This needs [uv](https://docs.astral.sh/uv/getting-started/installation/); uv fetches a suitable Python (3.11 or later) if the system doesn't have one.
 
 ```bash
 git clone git@github.com:things-nyc/ttn_mass_provision
 cd ttn_mass_provision
 
-# after cloning, create the .venv
-make venv
-
-# set up the virtual environment
-# follow the prompt, but normally:
-source .venv/bin/activate
+# create .venv and install the dependencies listed in uv.lock
+uv sync
 
 # make sure the script is functional
-python -m ttn_mass_provision --help
+uv run ttn_mass_provision --help
+```
+
+`make venv` runs `uv sync`. `make build` puts a wheel and source archive in `dist`.
+
+To install the program as a command outside this directory:
+
+```bash
+uv tool install git+https://github.com/things-nyc/ttn_mass_provision
 ```
 
 ## Running the program
@@ -87,16 +91,16 @@ python -m ttn_mass_provision --help
 In most cases, the following command will work:
 
 ```bash
-python -m ttn_mass_provision -P {password} -vvv
+uv run ttn_mass_provision -P {password} -vvv
 ```
 
 Messages containing the string "ERROR:" indicate that something has gone wrong and that the program didn't work. If you can't figure out why you're getting an error, try adding the `--debug` option to the command line.
 
 ## Important gotchas
 
-#. __*DO NOT*__ use the command `python3` to launch `ttn_mass_provision` when running in a `.venv`.  For some reason, they replace `python` in the virtual environment but they don't bother to replace `python3`. So you'll get the wrong python, and things will fail mysteriously.
+#. If you activate `.venv` and run `python -m ttn_mass_provision` instead of `uv run`, use `python`, not `python3`. Some virtual environments replace `python` but not `python3`, so `python3` runs the system Python, which lacks the dependencies.
 
-#. Watch out for tab completion when writing the command. On many systems, if you use `<tab>` to auto comlpete `ttn_mass_provision`, you'll get a trailing `/`.  THe command `python -m ttn_mass_provision/` typically does not work.
+#. Watch out for tab completion when writing a `python -m` command. On many systems, if you use `<tab>` to complete `ttn_mass_provision`, you'll get a trailing `/`.  The command `python -m ttn_mass_provision/` typically does not work.
 
 ## Meta
 

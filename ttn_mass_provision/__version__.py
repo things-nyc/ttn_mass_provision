@@ -13,5 +13,5 @@
 #
 ##############################################################################
 
-# this is the version -- setup.cfg uses it, as does __init__.
+# this is the version -- pyproject.toml uses it, as does __init__.
 __version__ = "0.9.0-pre4"
